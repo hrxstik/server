@@ -142,6 +142,24 @@ app.get('/api/occupied-dates/:propertyId', async (req, res) => {
   const propertyId = req.params.propertyId;
 
   try {
+    const [results] = await connection
+      .promise()
+      .query(
+        'SELECT start_date, end_date FROM bookings WHERE property_id = ? AND deleted_at IS NULL',
+        [propertyId],
+      );
+
+    res.json(results);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Ошибка при получении занятых дат');
+  }
+});
+
+app.get('/api/occupied-dates/:propertyId', async (req, res) => {
+  const propertyId = req.params.propertyId;
+
+  try {
     const occupiedDates = await connection.query(
       'SELECT start_date, end_date FROM bookings WHERE property_id = ?',
       [propertyId],
