@@ -1,0 +1,41 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Booking {
+  id         Int      @id @default(autoincrement())
+  propertyId Int
+  startDate  DateTime @db.Date @map("start_date")
+  endDate    DateTime @db.Date @map("end_date")
+  startTime  String   @map("start_time")
+  endTime    String   @map("end_time")
+  phone      String
+  createdAt  DateTime @default(now()) @map("created_at")
+  deletedAt  DateTime? @map("deleted_at")
+  property   Property @relation(fields: [propertyId], references: [id])
+
+  @@map("bookings")
+}
+model Property {
+  id            Int     @id @default(autoincrement())
+  propertyTypeId Int
+  propertyName  String  @map("property_name")
+  propertyType  PropertyType @relation(fields: [propertyTypeId], references: [id])
+
+  @@map("properties")
+  Booking Booking[]
+}
+
+model PropertyType {
+  id       Int     @id @default(autoincrement())
+  typeName String  @map("type_name")
+
+  properties Property[]
+
+  @@map("property_types")
+}
