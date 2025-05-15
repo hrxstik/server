@@ -1,0 +1,35 @@
+version: '3.9'
+
+services:
+  mysql_db:
+    image: mysql:8.0
+    container_name: mysql_container
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: yaring
+    ports:
+      - '3306:3306'
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  server:
+    build: .
+    container_name: server_container
+    ports:
+      - '3000:3000'
+    environment:
+      DATABASE_URL: 'mysql://root:root@mysql_db:3306/yaring'
+    depends_on:
+      - mysql_db
+      - react_app
+
+  react_app:
+    build: ../client
+    ports:
+      - '80:80'
+
+volumes:
+  mysql_data:
+
+networks:
+  app_network:
