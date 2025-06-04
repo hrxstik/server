@@ -1,10 +1,21 @@
 import express from 'express';
-import { authenticate, generateToken } from './utils.js';
+import { authenticate, generateToken, authenticateToken } from './utils.js';
 import { PrismaClient } from '@prisma/client';
 import Joi from 'joi';
 
 const router = express.Router();
 const prisma = new PrismaClient();
+
+router.post('/login', (req, res) => {
+  const { username, password } = req.body;
+  const user = authenticate(username, password);
+
+  if (!user) {
+    return res.status(401).send('Неверные данные');
+  }
+  const token = generateToken(user);
+  res.json({ token });
+});
 
 router.post('/book', async (req, res) => {
   const schema = Joi.object({
@@ -144,16 +155,47 @@ router.get('/get-properties', async (req, res) => {
   }
 });
 
-router.post('/login', (req, res) => {
-  const { username, password } = req.body;
-  const user = authenticate(username, password);
+router.get('/occupied-dates/:propertyId', async (req, res) => {
+  const propertyId = req.params.propertyId;
 
-  if (!user) {
-    return res.status(401).send('Неверные данные');
+  try {
+    const bookings = await prisma.booking.findMany({
+      where: {
+        propertyId: Number(propertyId),
+        deletedAt: null,
+      },
+    });
+
+    const occupiedDates = [];
+    bookings.forEach((booking) => {
+      let currentDate = new Date(booking.startDate);
+      const endDate = new Date(booking.endDate);
+
+      currentDate.setHours(0, 0, 0, 0);
+      endDate.setHours(0, 0, 0, 0);
+      if (currentDate.getTime() === endDate.getTime()) {
+        occupiedDates.push(new Date(currentDate));
+      } else {
+        while (currentDate < endDate) {
+          occupiedDates.push(new Date(currentDate));
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
+      }
+    });
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    occupiedDates.push(today);
+
+    res.json(occupiedDates);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Ошибка при получении занятых дат');
   }
-  const token = generateToken(user);
-  res.json({ token });
 });
+
+router.use(authenticateToken);
 
 router.get('/getBookings', async (req, res) => {
   const { propertyType } = req.query;
@@ -208,46 +250,6 @@ router.delete('/bookings/:id', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).send('Ошибка при удалении бронирования');
-  }
-});
-
-router.get('/occupied-dates/:propertyId', async (req, res) => {
-  const propertyId = req.params.propertyId;
-
-  try {
-    const bookings = await prisma.booking.findMany({
-      where: {
-        propertyId: Number(propertyId),
-        deletedAt: null,
-      },
-    });
-
-    const occupiedDates = [];
-    bookings.forEach((booking) => {
-      let currentDate = new Date(booking.startDate);
-      const endDate = new Date(booking.endDate);
-
-      currentDate.setHours(0, 0, 0, 0);
-      endDate.setHours(0, 0, 0, 0);
-      if (currentDate.getTime() === endDate.getTime()) {
-        occupiedDates.push(new Date(currentDate));
-      } else {
-        while (currentDate < endDate) {
-          occupiedDates.push(new Date(currentDate));
-          currentDate.setDate(currentDate.getDate() + 1);
-        }
-      }
-    });
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    occupiedDates.push(today);
-
-    res.json(occupiedDates);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send('Ошибка при получении занятых дат');
   }
 });
 
