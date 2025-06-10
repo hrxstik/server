@@ -14,8 +14,6 @@ RUN npm install
 COPY prisma ./prisma
 COPY . .
 
-RUN npm install -g prisma
-
 RUN npx prisma generate
 
 EXPOSE 3000
