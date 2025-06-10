@@ -1,24 +1,6 @@
-# FROM node:20.16.0-alpine
-
-# WORKDIR /app
-
-# COPY package*.json ./
-# RUN npm install
-
-# COPY prisma ./prisma
-# COPY . .
-
-# RUN npm install -g prisma
-# RUN prisma generate
-
-
-# EXPOSE 3000
-
-# CMD ["npm", "start"]
-
 FROM node:20.16.0-alpine
 
-RUN apk add --no-cache musl-locales musl-locales-lang
+RUN apk add --no-cache musl-locales musl-locales-lang bash
 
 ENV LANG=en_US.UTF-8
 ENV LANGUAGE=en_US:en
@@ -33,8 +15,11 @@ COPY prisma ./prisma
 COPY . .
 
 RUN npm install -g prisma
-RUN prisma generate
+
+RUN npx prisma generate  
+RUN npx prisma migrate deploy 
+RUN node seed.js 
 
 EXPOSE 3000
 
-CMD ["sh", "-c", "npm run migrate && npm start"]
+CMD ["npm", "start"]
