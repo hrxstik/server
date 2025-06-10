@@ -17,8 +17,7 @@ COPY . .
 RUN npm install -g prisma
 
 RUN npx prisma generate
-RUN node seed.js 
 
 EXPOSE 3000
 
-CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node seed.js && npm start"]
